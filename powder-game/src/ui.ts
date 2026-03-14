@@ -1,6 +1,7 @@
 import { ElementId } from './types';
 import { ELEMENTS } from './simulation/elements';
 import { InputHandler } from './input';
+import { SCENES, type Scene } from './scenes';
 
 // Placeable elements (exclude Empty, Glass, Steam -- those are derived)
 const PLACEABLE: ElementId[] = [
@@ -15,19 +16,21 @@ export class UI {
   private onPause: () => void;
   private onResume: () => void;
   private onClear: () => void;
+  private onLoadScene: (scene: Scene) => void;
   private paused = false;
   private eraserActive = false;
 
   constructor(
     container: HTMLElement,
     input: InputHandler,
-    callbacks: { onPause: () => void; onResume: () => void; onClear: () => void }
+    callbacks: { onPause: () => void; onResume: () => void; onClear: () => void; onLoadScene: (scene: Scene) => void }
   ) {
     this.container = container;
     this.input = input;
     this.onPause = callbacks.onPause;
     this.onResume = callbacks.onResume;
     this.onClear = callbacks.onClear;
+    this.onLoadScene = callbacks.onLoadScene;
 
     this.build();
     this.setupKeyboard();
@@ -63,6 +66,7 @@ export class UI {
     controls.style.cssText = 'position:fixed;top:12px;right:12px;display:flex;gap:8px;align-items:center;padding:8px;background:rgba(26,26,36,0.8);border-radius:10px;z-index:10;';
 
     controls.appendChild(this.createBrushSlider());
+    controls.appendChild(this.createDemoButton());
     controls.appendChild(this.createPauseButton());
     controls.appendChild(this.createClearButton());
     this.container.appendChild(controls);
@@ -93,6 +97,7 @@ export class UI {
     ctrlRow.appendChild(this.createBrushSlider());
     const btnGroup = document.createElement('div');
     btnGroup.style.cssText = 'display:flex;gap:6px;';
+    btnGroup.appendChild(this.createDemoButton());
     btnGroup.appendChild(this.createPauseButton());
     btnGroup.appendChild(this.createClearButton());
     ctrlRow.appendChild(btnGroup);
@@ -165,6 +170,46 @@ export class UI {
       else this.onResume();
     });
     return btn;
+  }
+
+  private createDemoButton(): HTMLElement {
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:relative;';
+
+    const btn = document.createElement('div');
+    btn.style.cssText = 'background:#1a1a24;border-radius:8px;padding:8px 10px;cursor:pointer;color:#888;font-size:12px;user-select:none;';
+    btn.textContent = '?';
+    btn.title = 'Load demo scene';
+
+    const menu = document.createElement('div');
+    menu.style.cssText = 'display:none;position:absolute;top:100%;right:0;margin-top:4px;background:rgba(26,26,36,0.95);border-radius:8px;padding:4px;z-index:20;min-width:140px;';
+
+    for (const scene of SCENES) {
+      const item = document.createElement('div');
+      item.style.cssText = 'padding:6px 10px;cursor:pointer;color:#aaa;font-size:12px;border-radius:4px;white-space:nowrap;';
+      item.textContent = `${scene.emoji} ${scene.name}`;
+      item.addEventListener('mouseenter', () => { item.style.background = '#2a2a3a'; });
+      item.addEventListener('mouseleave', () => { item.style.background = 'none'; });
+      item.addEventListener('click', () => {
+        menu.style.display = 'none';
+        this.onLoadScene(scene);
+      });
+      menu.appendChild(item);
+    }
+
+    btn.addEventListener('click', () => {
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // Close menu on outside click
+    document.addEventListener('click', (e) => {
+      if (!wrapper.contains(e.target as Node)) {
+        menu.style.display = 'none';
+      }
+    });
+
+    wrapper.append(btn, menu);
+    return wrapper;
   }
 
   private createClearButton(): HTMLElement {

@@ -3,6 +3,7 @@ import { InputHandler } from './input';
 import { UI } from './ui';
 import { Audio } from './audio';
 import { selectTier, calculateCanvasSize } from './adaptive';
+import { sceneToCommands } from './scenes';
 import type { FromWorkerMessage, ToWorkerMessage } from './types';
 
 async function init(): Promise<void> {
@@ -58,6 +59,17 @@ async function init(): Promise<void> {
     onPause: () => worker.postMessage({ type: 'pause' } as ToWorkerMessage),
     onResume: () => worker.postMessage({ type: 'resume' } as ToWorkerMessage),
     onClear: () => worker.postMessage({ type: 'clear' } as ToWorkerMessage),
+    onLoadScene: (scene) => {
+      // Clear the grid first, then load the scene
+      worker.postMessage({ type: 'clear' } as ToWorkerMessage);
+      const commands = sceneToCommands(scene, gridWidth, gridHeight);
+      // Send commands in batches to avoid overwhelming the worker
+      const BATCH_SIZE = 5000;
+      for (let i = 0; i < commands.length; i += BATCH_SIZE) {
+        const batch = commands.slice(i, i + BATCH_SIZE);
+        worker.postMessage({ type: 'input', commands: batch } as ToWorkerMessage);
+      }
+    },
   });
 
   // Frame tracking
