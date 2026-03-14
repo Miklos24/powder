@@ -55,7 +55,7 @@ function react(
 ): boolean {
   // Fire interactions
   if (elem === ElementId.Fire) {
-    if (neighbor === ElementId.Wood) {
+    if (neighbor === ElementId.Wood || neighbor === ElementId.Plant) {
       grid.set(nx, ny, ElementId.Fire);
       grid.setMeta(nx, ny, 40 + Math.floor(Math.random() * 20));
       return false;
@@ -73,6 +73,12 @@ function react(
     if (neighbor === ElementId.Ice) {
       grid.set(nx, ny, ElementId.Water);
       grid.setMeta(nx, ny, 0);
+      return false;
+    }
+    if (neighbor === ElementId.Firework) {
+      // Fire triggers firework — explode it into fire sparks
+      grid.set(nx, ny, ElementId.Fire);
+      grid.setMeta(nx, ny, 40 + Math.floor(Math.random() * 20));
       return false;
     }
   }
@@ -102,7 +108,7 @@ function react(
 
   // Acid interactions
   if (elem === ElementId.Acid) {
-    if (neighbor === ElementId.Wood || neighbor === ElementId.Metal) {
+    if (neighbor === ElementId.Wood || neighbor === ElementId.Metal || neighbor === ElementId.Plant) {
       grid.set(nx, ny, ElementId.Empty);
       grid.setMeta(nx, ny, 0);
       grid.set(x, y, ElementId.Empty);

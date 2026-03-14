@@ -16,11 +16,18 @@ export function updateCell(grid: Grid, x: number, y: number, leftToRight: boolea
   const def = ELEMENTS[elem];
 
   switch (def.category) {
-    case 'powder': updatePowder(grid, x, y); break;
+    case 'powder': {
+      if (elem === ElementId.Firework) {
+        updateFirework(grid, x, y);
+      } else {
+        updatePowder(grid, x, y);
+      }
+      break;
+    }
     case 'liquid': updateLiquid(grid, x, y, leftToRight); break;
     case 'gas':    updateGas(grid, x, y); break;
     case 'energy': updateEnergy(grid, x, y, elem); break;
-    case 'static': break;
+    case 'static': updateStatic(grid, x, y, elem); break;
   }
 }
 
@@ -76,6 +83,61 @@ function updateGas(grid: Grid, x: number, y: number): void {
   const drift = Math.random() < 0.5 ? -1 : 1;
   if (tryMove(grid, x, y, x + drift, y - 1)) return;
   if (tryMove(grid, x, y, x + drift, y)) return;
+}
+
+function updateStatic(grid: Grid, x: number, y: number, elem: ElementId): void {
+  if (elem === ElementId.Plant) {
+    updatePlant(grid, x, y);
+  }
+}
+
+function updatePlant(grid: Grid, x: number, y: number): void {
+  // Plant grows upward when adjacent to water (5% chance per tick)
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      if (dx === 0 && dy === 0) continue;
+      const nx = x + dx;
+      const ny = y + dy;
+      if (grid.get(nx, ny) === ElementId.Water) {
+        if (Math.random() < 0.05 && grid.get(x, y - 1) === ElementId.Empty) {
+          grid.set(x, y - 1, ElementId.Plant);
+          grid.setMeta(x, y - 1, 0);
+        }
+        return;
+      }
+    }
+  }
+}
+
+function updateFirework(grid: Grid, x: number, y: number): void {
+  // Firework falls like powder
+  if (tryMove(grid, x, y, x, y + 1)) return;
+
+  // Can't fall straight — try diagonal
+  const tryLeftFirst = Math.random() < 0.5;
+  if (tryLeftFirst) {
+    if (tryMove(grid, x, y, x - 1, y + 1)) return;
+    if (tryMove(grid, x, y, x + 1, y + 1)) return;
+  } else {
+    if (tryMove(grid, x, y, x + 1, y + 1)) return;
+    if (tryMove(grid, x, y, x - 1, y + 1)) return;
+  }
+
+  // Blocked — explode into fire + colorful sparks
+  grid.set(x, y, ElementId.Fire);
+  grid.setMeta(x, y, 40 + Math.floor(Math.random() * 20));
+
+  const radius = 5;
+  for (let i = 0; i < 12; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 1 + Math.random() * radius;
+    const sx = x + Math.round(Math.cos(angle) * dist);
+    const sy = y + Math.round(Math.sin(angle) * dist);
+    if (grid.inBounds(sx, sy) && grid.get(sx, sy) === ElementId.Empty) {
+      grid.set(sx, sy, ElementId.Fire);
+      grid.setMeta(sx, sy, 20 + Math.floor(Math.random() * 40));
+    }
+  }
 }
 
 function updateEnergy(grid: Grid, x: number, y: number, elem: ElementId): void {

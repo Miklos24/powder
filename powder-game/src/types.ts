@@ -14,9 +14,11 @@ export const enum ElementId {
   Electricity = 12,
   Glass = 13,
   Steam = 14,
+  Plant = 15,
+  Firework = 16,
 }
 
-export const ELEMENT_COUNT = 15;
+export const ELEMENT_COUNT = 17;
 
 export type Category = 'empty' | 'powder' | 'liquid' | 'gas' | 'static' | 'energy';
 

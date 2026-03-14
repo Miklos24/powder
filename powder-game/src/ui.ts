@@ -8,6 +8,7 @@ const PLACEABLE: ElementId[] = [
   ElementId.Sand, ElementId.Water, ElementId.Fire, ElementId.Oil,
   ElementId.Wood, ElementId.Stone, ElementId.Metal, ElementId.Ice,
   ElementId.Acid, ElementId.Lava, ElementId.Gas, ElementId.Electricity,
+  ElementId.Plant, ElementId.Firework,
 ];
 
 export class UI {

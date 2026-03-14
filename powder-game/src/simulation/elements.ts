@@ -16,6 +16,8 @@ export const ELEMENTS: readonly ElementDef[] = [
   { id: ElementId.Electricity, name: 'Electricity', category: 'energy', density: 0, opacity: 0.8,  color: [240, 232, 160], glow: true,  metadataType: 'age',  defaultMeta: 3 },
   { id: ElementId.Glass,       name: 'Glass',       category: 'static', density: 5, opacity: 0.6,  color: [192, 216, 224], glow: false, metadataType: 'heat', defaultMeta: 0 },
   { id: ElementId.Steam,       name: 'Steam',       category: 'gas',    density: 0, opacity: 0.4,  color: [208, 208, 216], glow: false, metadataType: 'age',  defaultMeta: 150 },
+  { id: ElementId.Plant,       name: 'Plant',       category: 'static', density: 5, opacity: 1.0,  color: [144, 208, 128], glow: false, metadataType: 'heat', defaultMeta: 0 },
+  { id: ElementId.Firework,    name: 'Firework',    category: 'powder', density: 3, opacity: 1.0,  color: [240, 136, 136], glow: true,  metadataType: 'age',  defaultMeta: 255 },
 ];
 
 export function getElement(id: ElementId): ElementDef {
