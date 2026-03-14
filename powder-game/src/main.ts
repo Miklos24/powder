@@ -55,6 +55,7 @@ async function init(): Promise<void> {
   });
 
   // UI setup
+  let speed = 1;
   const ui = new UI(uiContainer, input, {
     onPause: () => worker.postMessage({ type: 'pause' } as ToWorkerMessage),
     onResume: () => worker.postMessage({ type: 'resume' } as ToWorkerMessage),
@@ -70,6 +71,7 @@ async function init(): Promise<void> {
         worker.postMessage({ type: 'input', commands: batch } as ToWorkerMessage);
       }
     },
+    onSpeedChange: (s: number) => { speed = s; },
   });
 
   // Frame tracking
@@ -122,6 +124,7 @@ async function init(): Promise<void> {
 
   // Main loop: send input + request tick
   let loopCount = 0;
+  let tickAccumulator = 0;
   function loop(): void {
     // Flush input commands to worker
     const commands = input.flush();
@@ -135,9 +138,16 @@ async function init(): Promise<void> {
       worker.postMessage({ type: 'wind', commands: windCommands } as ToWorkerMessage);
     }
 
-    // Request simulation tick (skip every other frame if throttled)
-    if (!skipSimulation || loopCount % 2 === 0) {
-      worker.postMessage({ type: 'tick' } as ToWorkerMessage);
+    // Speed control: accumulate ticks based on speed multiplier
+    // At 0.25x: tick every 4th frame, at 4x: 4 ticks per frame
+    tickAccumulator += speed;
+    const ticksThisFrame = Math.floor(tickAccumulator);
+    tickAccumulator -= ticksThisFrame;
+
+    for (let t = 0; t < ticksThisFrame; t++) {
+      if (!skipSimulation || loopCount % 2 === 0) {
+        worker.postMessage({ type: 'tick' } as ToWorkerMessage);
+      }
     }
     loopCount++;
 

@@ -17,14 +17,22 @@ export class UI {
   private onResume: () => void;
   private onClear: () => void;
   private onLoadScene: (scene: Scene) => void;
+  private onSpeedChange: (speed: number) => void;
   private paused = false;
   private eraserActive = false;
   private windActive = false;
+  speed = 1;
 
   constructor(
     container: HTMLElement,
     input: InputHandler,
-    callbacks: { onPause: () => void; onResume: () => void; onClear: () => void; onLoadScene: (scene: Scene) => void }
+    callbacks: {
+      onPause: () => void;
+      onResume: () => void;
+      onClear: () => void;
+      onLoadScene: (scene: Scene) => void;
+      onSpeedChange?: (speed: number) => void;
+    }
   ) {
     this.container = container;
     this.input = input;
@@ -32,6 +40,7 @@ export class UI {
     this.onResume = callbacks.onResume;
     this.onClear = callbacks.onClear;
     this.onLoadScene = callbacks.onLoadScene;
+    this.onSpeedChange = callbacks.onSpeedChange ?? (() => {});
 
     this.build();
     this.setupKeyboard();
@@ -68,6 +77,7 @@ export class UI {
     controls.style.cssText = 'position:fixed;top:12px;right:12px;display:flex;gap:8px;align-items:center;padding:8px;background:rgba(26,26,36,0.8);border-radius:10px;z-index:10;';
 
     controls.appendChild(this.createBrushSlider());
+    controls.appendChild(this.createSpeedSlider());
     controls.appendChild(this.createDemoButton());
     controls.appendChild(this.createPauseButton());
     controls.appendChild(this.createClearButton());
@@ -98,6 +108,7 @@ export class UI {
     const ctrlRow = document.createElement('div');
     ctrlRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:6px;';
     ctrlRow.appendChild(this.createBrushSlider());
+    ctrlRow.appendChild(this.createSpeedSlider());
     const btnGroup = document.createElement('div');
     btnGroup.style.cssText = 'display:flex;gap:6px;';
     btnGroup.appendChild(this.createDemoButton());
@@ -178,6 +189,30 @@ export class UI {
     const big = document.createElement('div');
     big.style.cssText = 'width:14px;height:14px;border-radius:50%;border:1.5px solid #666;flex-shrink:0;';
     wrapper.append(small, slider, big);
+    return wrapper;
+  }
+
+  private createSpeedSlider(): HTMLElement {
+    const STOPS = [0.25, 0.5, 1, 2, 4];
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'display:flex;align-items:center;gap:6px;';
+    const label = document.createElement('span');
+    label.className = 'pg-speed-label';
+    label.style.cssText = 'color:#666;font-size:11px;font-family:monospace;min-width:32px;text-align:center;';
+    label.textContent = '1x';
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = '0';
+    slider.max = String(STOPS.length - 1);
+    slider.value = String(STOPS.indexOf(1));
+    slider.style.cssText = 'width:60px;accent-color:#666;';
+    slider.addEventListener('input', () => {
+      const speed = STOPS[Number(slider.value)];
+      this.speed = speed;
+      label.textContent = `${speed}x`;
+      this.onSpeedChange(speed);
+    });
+    wrapper.append(label, slider);
     return wrapper;
   }
 
