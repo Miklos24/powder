@@ -13,6 +13,7 @@ const PLACEABLE: ElementId[] = [
 export class UI {
   private container: HTMLElement;
   private input: InputHandler;
+  private canvas: HTMLCanvasElement;
   private onPause: () => void;
   private onResume: () => void;
   private onClear: () => void;
@@ -26,6 +27,7 @@ export class UI {
   constructor(
     container: HTMLElement,
     input: InputHandler,
+    canvas: HTMLCanvasElement,
     callbacks: {
       onPause: () => void;
       onResume: () => void;
@@ -36,6 +38,7 @@ export class UI {
   ) {
     this.container = container;
     this.input = input;
+    this.canvas = canvas;
     this.onPause = callbacks.onPause;
     this.onResume = callbacks.onResume;
     this.onClear = callbacks.onClear;
@@ -81,6 +84,7 @@ export class UI {
     controls.appendChild(this.createDemoButton());
     controls.appendChild(this.createPauseButton());
     controls.appendChild(this.createClearButton());
+    controls.appendChild(this.createScreenshotButton());
     this.container.appendChild(controls);
 
     // FPS display -- bottom-left
@@ -114,6 +118,7 @@ export class UI {
     btnGroup.appendChild(this.createDemoButton());
     btnGroup.appendChild(this.createPauseButton());
     btnGroup.appendChild(this.createClearButton());
+    btnGroup.appendChild(this.createScreenshotButton());
     ctrlRow.appendChild(btnGroup);
     toolbar.appendChild(ctrlRow);
 
@@ -278,6 +283,27 @@ export class UI {
     return btn;
   }
 
+  private createScreenshotButton(): HTMLElement {
+    const btn = document.createElement('div');
+    btn.style.cssText = 'background:#1a1a24;border-radius:8px;padding:8px 10px;cursor:pointer;color:#888;font-size:12px;user-select:none;';
+    btn.textContent = '\uD83D\uDCF7';
+    btn.title = 'Screenshot (S)';
+    btn.addEventListener('click', () => this.takeScreenshot());
+    return btn;
+  }
+
+  private takeScreenshot(): void {
+    this.canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `powder-${Date.now()}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }, 'image/png');
+  }
+
   private refreshSelection(): void {
     // Update all element buttons
     const buttons = this.container.querySelectorAll<HTMLElement>('[data-elem-id]');
@@ -364,6 +390,10 @@ export class UI {
       }
       if (e.key.toLowerCase() === 'c') {
         this.onClear();
+        return;
+      }
+      if (e.key.toLowerCase() === 's') {
+        this.takeScreenshot();
         return;
       }
     });

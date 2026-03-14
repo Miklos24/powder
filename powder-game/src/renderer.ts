@@ -46,7 +46,7 @@ export class Renderer {
     this.gridWidth = gridWidth;
     this.gridHeight = gridHeight;
 
-    const gl = canvas.getContext('webgl', { alpha: false, antialias: false });
+    const gl = canvas.getContext('webgl', { alpha: false, antialias: false, preserveDrawingBuffer: true });
     if (!gl) throw new Error('WebGL not supported');
     this.gl = gl;
 

@@ -56,7 +56,7 @@ async function init(): Promise<void> {
 
   // UI setup
   let speed = 1;
-  const ui = new UI(uiContainer, input, {
+  const ui = new UI(uiContainer, input, canvas, {
     onPause: () => worker.postMessage({ type: 'pause' } as ToWorkerMessage),
     onResume: () => worker.postMessage({ type: 'resume' } as ToWorkerMessage),
     onClear: () => worker.postMessage({ type: 'clear' } as ToWorkerMessage),
