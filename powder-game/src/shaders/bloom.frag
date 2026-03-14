@@ -8,8 +8,8 @@ uniform vec2 u_texelSize;          // 1.0 / texture dimensions
 uniform int u_mode;                // 0=extract, 1=blur-h, 2=blur-v, 3=composite
 
 // Brightness threshold for bloom extraction
-const float THRESHOLD = 0.65;
-const float BLOOM_INTENSITY = 0.45;
+const float THRESHOLD = 0.82;
+const float BLOOM_INTENSITY = 0.25;
 
 void main() {
   // Extract bright pixels
