@@ -20,9 +20,11 @@ export class UI {
   private onClear: () => void;
   private onLoadScene: (scene: Scene) => void;
   private onSpeedChange: (speed: number) => void;
+  private onGravityToggle: () => void;
   private paused = false;
   private eraserActive = false;
   private windActive = false;
+  private gravityFlipped = false;
   speed = 1;
 
   constructor(
@@ -35,6 +37,7 @@ export class UI {
       onClear: () => void;
       onLoadScene: (scene: Scene) => void;
       onSpeedChange?: (speed: number) => void;
+      onGravityToggle: () => void;
     }
   ) {
     this.container = container;
@@ -45,6 +48,7 @@ export class UI {
     this.onClear = callbacks.onClear;
     this.onLoadScene = callbacks.onLoadScene;
     this.onSpeedChange = callbacks.onSpeedChange ?? (() => {});
+    this.onGravityToggle = callbacks.onGravityToggle;
 
     this.build();
     this.setupKeyboard();
@@ -82,6 +86,7 @@ export class UI {
 
     controls.appendChild(this.createBrushSlider());
     controls.appendChild(this.createSpeedSlider());
+    controls.appendChild(this.createGravityButton());
     controls.appendChild(this.createDemoButton());
     controls.appendChild(this.createPauseButton());
     controls.appendChild(this.createClearButton());
@@ -116,6 +121,7 @@ export class UI {
     ctrlRow.appendChild(this.createSpeedSlider());
     const btnGroup = document.createElement('div');
     btnGroup.style.cssText = 'display:flex;gap:6px;';
+    btnGroup.appendChild(this.createGravityButton());
     btnGroup.appendChild(this.createDemoButton());
     btnGroup.appendChild(this.createPauseButton());
     btnGroup.appendChild(this.createClearButton());
@@ -220,6 +226,20 @@ export class UI {
     });
     wrapper.append(label, slider);
     return wrapper;
+  }
+
+  private createGravityButton(): HTMLElement {
+    const btn = document.createElement('div');
+    btn.className = 'pg-gravity-btn';
+    btn.style.cssText = 'background:#1a1a24;border-radius:8px;padding:8px 10px;cursor:pointer;color:#888;font-size:12px;user-select:none;transition:transform 0.2s;';
+    btn.textContent = '\u2B07'; // ⬇ down arrow
+    btn.title = 'Toggle gravity (G)';
+    btn.addEventListener('click', () => {
+      this.gravityFlipped = !this.gravityFlipped;
+      btn.style.transform = this.gravityFlipped ? 'rotate(180deg)' : '';
+      this.onGravityToggle();
+    });
+    return btn;
   }
 
   private createPauseButton(): HTMLElement {
@@ -387,6 +407,11 @@ export class UI {
         this.input.windMode = this.windActive;
         this.input.eraserMode = false;
         this.refreshSelection();
+        return;
+      }
+      if (e.key.toLowerCase() === 'g') {
+        const gravBtn = this.container.querySelector<HTMLElement>('.pg-gravity-btn');
+        if (gravBtn) gravBtn.click();
         return;
       }
       if (e.key.toLowerCase() === 'c') {

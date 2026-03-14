@@ -54,6 +54,9 @@ async function init(): Promise<void> {
     worker.postMessage(initMsg);
   });
 
+  // Gravity state
+  let gravityDir: 1 | -1 = 1;
+
   // UI setup
   let speed = 1;
   const ui = new UI(uiContainer, input, canvas, {
@@ -72,6 +75,10 @@ async function init(): Promise<void> {
       }
     },
     onSpeedChange: (s: number) => { speed = s; },
+    onGravityToggle: () => {
+      gravityDir = gravityDir === 1 ? -1 : 1;
+      worker.postMessage({ type: 'setGravity', dir: gravityDir } as ToWorkerMessage);
+    },
   });
 
   // Frame tracking

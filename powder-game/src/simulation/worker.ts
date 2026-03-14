@@ -8,6 +8,7 @@ import { ElementId } from '../types';
 let grid: Grid | null = null;
 let paused = false;
 let frameCount = 0;
+let gravityDir: 1 | -1 = 1;
 
 // Only attach message handler when running as a worker (not during tests)
 if (typeof self !== 'undefined' && typeof self.onmessage !== 'undefined') {
@@ -41,9 +42,13 @@ if (typeof self !== 'undefined' && typeof self.onmessage !== 'undefined') {
         if (grid) grid.clear();
         break;
 
+      case 'setGravity':
+        gravityDir = msg.dir;
+        break;
+
       case 'tick':
         if (grid && !paused) {
-          tick(grid, frameCount++);
+          tick(grid, frameCount++, gravityDir);
         }
         if (grid) sendFrame(grid);
         break;
@@ -117,7 +122,7 @@ export function applyWind(grid: Grid, commands: WindCommand[]): void {
   }
 }
 
-export function tick(grid: Grid, frame: number): void {
+export function tick(grid: Grid, frame: number, gDir: 1 | -1 = 1): void {
   const leftToRight = frame % 2 === 0;
 
   // Process interactions first (transformations, heat)
@@ -133,15 +138,19 @@ export function tick(grid: Grid, frame: number): void {
     }
   }
 
-  // Then movement (bottom-to-top so falling works correctly)
-  for (let y = grid.height - 1; y >= 0; y--) {
+  // Scan order depends on gravity: process from the "bottom" (where things fall to)
+  const yStart = gDir === 1 ? grid.height - 1 : 0;
+  const yEnd = gDir === 1 ? -1 : grid.height;
+  const yStep = gDir === 1 ? -1 : 1;
+
+  for (let y = yStart; y !== yEnd; y += yStep) {
     if (leftToRight) {
       for (let x = 0; x < grid.width; x++) {
-        updateCell(grid, x, y, leftToRight);
+        updateCell(grid, x, y, leftToRight, gDir);
       }
     } else {
       for (let x = grid.width - 1; x >= 0; x--) {
-        updateCell(grid, x, y, leftToRight);
+        updateCell(grid, x, y, leftToRight, gDir);
       }
     }
   }

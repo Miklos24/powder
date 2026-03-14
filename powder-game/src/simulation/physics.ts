@@ -8,8 +8,9 @@ import { Grid } from './grid';
  * @param x - Cell x coordinate
  * @param y - Cell y coordinate
  * @param leftToRight - Scan direction this frame (for bias prevention)
+ * @param gravityDir - Gravity direction: 1 = normal (down), -1 = flipped (up)
  */
-export function updateCell(grid: Grid, x: number, y: number, leftToRight: boolean): void {
+export function updateCell(grid: Grid, x: number, y: number, leftToRight: boolean, gravityDir: 1 | -1 = 1): void {
   const elem = grid.get(x, y);
   if (elem === ElementId.Empty) return;
 
@@ -20,43 +21,43 @@ export function updateCell(grid: Grid, x: number, y: number, leftToRight: boolea
       if (elem === ElementId.Firework) {
         updateFirework(grid, x, y);
       } else {
-        updatePowder(grid, x, y);
+        updatePowder(grid, x, y, gravityDir);
       }
       break;
     }
-    case 'liquid': updateLiquid(grid, x, y, leftToRight); break;
-    case 'gas':    updateGas(grid, x, y); break;
-    case 'energy': updateEnergy(grid, x, y, elem); break;
+    case 'liquid': updateLiquid(grid, x, y, leftToRight, gravityDir); break;
+    case 'gas':    updateGas(grid, x, y, gravityDir); break;
+    case 'energy': updateEnergy(grid, x, y, elem, gravityDir); break;
     case 'static': updateStatic(grid, x, y, elem); break;
   }
 }
 
-function updatePowder(grid: Grid, x: number, y: number): void {
-  if (tryMove(grid, x, y, x, y + 1)) return;
+function updatePowder(grid: Grid, x: number, y: number, g: 1 | -1): void {
+  if (tryMove(grid, x, y, x, y + g)) return;
 
   const tryLeftFirst = Math.random() < 0.5;
   if (tryLeftFirst) {
-    if (tryMove(grid, x, y, x - 1, y + 1)) return;
-    if (tryMove(grid, x, y, x + 1, y + 1)) return;
+    if (tryMove(grid, x, y, x - 1, y + g)) return;
+    if (tryMove(grid, x, y, x + 1, y + g)) return;
   } else {
-    if (tryMove(grid, x, y, x + 1, y + 1)) return;
-    if (tryMove(grid, x, y, x - 1, y + 1)) return;
+    if (tryMove(grid, x, y, x + 1, y + g)) return;
+    if (tryMove(grid, x, y, x - 1, y + g)) return;
   }
 }
 
-function updateLiquid(grid: Grid, x: number, y: number, leftToRight: boolean): void {
+function updateLiquid(grid: Grid, x: number, y: number, leftToRight: boolean, g: 1 | -1): void {
   const elem = grid.get(x, y);
   const elemDensity = ELEMENTS[elem].density;
 
-  if (tryMoveOrDensitySwap(grid, x, y, x, y + 1, elemDensity)) return;
+  if (tryMoveOrDensitySwap(grid, x, y, x, y + g, elemDensity)) return;
 
   const tryLeftFirst = Math.random() < 0.5;
   if (tryLeftFirst) {
-    if (tryMoveOrDensitySwap(grid, x, y, x - 1, y + 1, elemDensity)) return;
-    if (tryMoveOrDensitySwap(grid, x, y, x + 1, y + 1, elemDensity)) return;
+    if (tryMoveOrDensitySwap(grid, x, y, x - 1, y + g, elemDensity)) return;
+    if (tryMoveOrDensitySwap(grid, x, y, x + 1, y + g, elemDensity)) return;
   } else {
-    if (tryMoveOrDensitySwap(grid, x, y, x + 1, y + 1, elemDensity)) return;
-    if (tryMoveOrDensitySwap(grid, x, y, x - 1, y + 1, elemDensity)) return;
+    if (tryMoveOrDensitySwap(grid, x, y, x + 1, y + g, elemDensity)) return;
+    if (tryMoveOrDensitySwap(grid, x, y, x - 1, y + g, elemDensity)) return;
   }
 
   if (leftToRight) {
@@ -68,7 +69,7 @@ function updateLiquid(grid: Grid, x: number, y: number, leftToRight: boolean): v
   }
 }
 
-function updateGas(grid: Grid, x: number, y: number): void {
+function updateGas(grid: Grid, x: number, y: number, g: 1 | -1): void {
   const meta = grid.getMeta(x, y);
 
   if (meta <= 1) {
@@ -78,10 +79,11 @@ function updateGas(grid: Grid, x: number, y: number): void {
   }
   grid.setMeta(x, y, meta - 1);
 
-  if (tryMove(grid, x, y, x, y - 1)) return;
+  // Gas rises opposite to gravity
+  if (tryMove(grid, x, y, x, y - g)) return;
 
   const drift = Math.random() < 0.5 ? -1 : 1;
-  if (tryMove(grid, x, y, x + drift, y - 1)) return;
+  if (tryMove(grid, x, y, x + drift, y - g)) return;
   if (tryMove(grid, x, y, x + drift, y)) return;
 }
 
@@ -140,15 +142,15 @@ function updateFirework(grid: Grid, x: number, y: number): void {
   }
 }
 
-function updateEnergy(grid: Grid, x: number, y: number, elem: ElementId): void {
+function updateEnergy(grid: Grid, x: number, y: number, elem: ElementId, g: 1 | -1): void {
   if (elem === ElementId.Fire) {
-    updateFire(grid, x, y);
+    updateFire(grid, x, y, g);
   } else if (elem === ElementId.Electricity) {
     updateElectricity(grid, x, y);
   }
 }
 
-function updateFire(grid: Grid, x: number, y: number): void {
+function updateFire(grid: Grid, x: number, y: number, g: 1 | -1): void {
   const meta = grid.getMeta(x, y);
 
   if (meta <= 1) {
@@ -171,9 +173,10 @@ function updateFire(grid: Grid, x: number, y: number): void {
     }
   }
 
+  // Fire rises opposite to gravity
   const drift = Math.random() < 0.3 ? (Math.random() < 0.5 ? -1 : 1) : 0;
-  if (tryMove(grid, x, y, x + drift, y - 1)) return;
-  if (drift !== 0 && tryMove(grid, x, y, x, y - 1)) return;
+  if (tryMove(grid, x, y, x + drift, y - g)) return;
+  if (drift !== 0 && tryMove(grid, x, y, x, y - g)) return;
 }
 
 function updateElectricity(grid: Grid, x: number, y: number): void {

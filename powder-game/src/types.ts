@@ -63,6 +63,9 @@ export type ToWorkerMessage = {
   commands: WindCommand[];
 } | {
   type: 'pause' | 'resume' | 'clear' | 'tick';
+} | {
+  type: 'setGravity';
+  dir: 1 | -1;
 };
 
 // Worker → Main thread
