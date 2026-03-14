@@ -2,7 +2,7 @@ import { Grid } from './grid';
 import { ELEMENTS } from './elements';
 import { updateCell } from './physics';
 import { processInteractions } from './interactions';
-import type { ToWorkerMessage, FromWorkerMessage, InputCommand } from '../types';
+import type { ToWorkerMessage, FromWorkerMessage, InputCommand, WindCommand } from '../types';
 import { ElementId } from '../types';
 
 let grid: Grid | null = null;
@@ -23,6 +23,10 @@ if (typeof self !== 'undefined' && typeof self.onmessage !== 'undefined') {
 
       case 'input':
         if (grid) applyInputs(grid, msg.commands);
+        break;
+
+      case 'wind':
+        if (grid) applyWind(grid, msg.commands);
         break;
 
       case 'pause':
@@ -63,6 +67,50 @@ export function applyInputs(grid: Grid, commands: InputCommand[]): void {
         } else if (grid.get(px, py) === ElementId.Empty) {
           grid.set(px, py, cmd.element);
           grid.setMeta(px, py, ELEMENTS[cmd.element].defaultMeta);
+        }
+      }
+    }
+  }
+}
+
+export function applyWind(grid: Grid, commands: WindCommand[]): void {
+  for (const cmd of commands) {
+    const r = cmd.radius;
+    // Normalize direction to get unit displacement
+    const len = Math.sqrt(cmd.dx * cmd.dx + cmd.dy * cmd.dy);
+    if (len === 0) continue;
+    const ndx = cmd.dx / len;
+    const ndy = cmd.dy / len;
+
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (dx * dx + dy * dy > r * r) continue;
+        const px = cmd.x + dx;
+        const py = cmd.y + dy;
+        if (!grid.inBounds(px, py)) continue;
+
+        const elem = grid.get(px, py);
+        if (elem === ElementId.Empty) continue;
+
+        const cat = ELEMENTS[elem].category;
+        if (cat === 'static') continue;
+
+        // Strength falls off with distance from center
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const strength = 1 - dist / (r + 1);
+
+        // Try to move the particle in the wind direction (1-2 cells based on strength)
+        const steps = Math.ceil(strength * 2);
+        let cx = px;
+        let cy = py;
+        for (let s = 0; s < steps; s++) {
+          const nx = cx + Math.round(ndx);
+          const ny = cy + Math.round(ndy);
+          if (!grid.inBounds(nx, ny)) break;
+          if (grid.get(nx, ny) !== ElementId.Empty) break;
+          grid.swap(cx, cy, nx, ny);
+          cx = nx;
+          cy = ny;
         }
       }
     }

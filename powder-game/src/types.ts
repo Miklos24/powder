@@ -41,6 +41,14 @@ export interface InputCommand {
   erase: boolean;
 }
 
+export interface WindCommand {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  radius: number;
+}
+
 export type ToWorkerMessage = {
   type: 'init';
   width: number;
@@ -48,6 +56,9 @@ export type ToWorkerMessage = {
 } | {
   type: 'input';
   commands: InputCommand[];
+} | {
+  type: 'wind';
+  commands: WindCommand[];
 } | {
   type: 'pause' | 'resume' | 'clear' | 'tick';
 };

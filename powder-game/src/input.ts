@@ -1,4 +1,4 @@
-import type { InputCommand } from './types';
+import type { InputCommand, WindCommand } from './types';
 import { ElementId } from './types';
 
 export class InputHandler {
@@ -6,6 +6,7 @@ export class InputHandler {
   private gridWidth: number;
   private gridHeight: number;
   private pendingCommands: InputCommand[] = [];
+  private pendingWindCommands: WindCommand[] = [];
   private lastPos: { x: number; y: number } | null = null;
   private drawing = false;
   private erasing = false;
@@ -13,6 +14,7 @@ export class InputHandler {
   selectedElement: ElementId = ElementId.Sand;
   brushRadius: number = 2;
   eraserMode: boolean = false;
+  windMode: boolean = false;
 
   /** Current cursor position in client coordinates, null when off-canvas */
   cursorClientPos: { x: number; y: number } | null = null;
@@ -59,10 +61,17 @@ export class InputHandler {
     }, { passive: false });
   }
 
-  /** Drain pending commands (called once per frame) */
+  /** Drain pending draw/erase commands (called once per frame) */
   flush(): InputCommand[] {
     const cmds = this.pendingCommands;
     this.pendingCommands = [];
+    return cmds;
+  }
+
+  /** Drain pending wind commands (called once per frame) */
+  flushWind(): WindCommand[] {
+    const cmds = this.pendingWindCommands;
+    this.pendingWindCommands = [];
     return cmds;
   }
 
@@ -78,15 +87,26 @@ export class InputHandler {
     this.erasing = rightButton || this.eraserMode;
     const pos = this.toGridCoords(clientX, clientY);
     this.lastPos = pos;
-    this.addCommand(pos.x, pos.y);
+    if (!this.windMode) {
+      this.addCommand(pos.x, pos.y);
+    }
   }
 
   private onPointerMove(clientX: number, clientY: number): void {
     if (!this.drawing) return;
     const pos = this.toGridCoords(clientX, clientY);
 
-    if (this.lastPos) {
-      // Bresenham interpolation
+    if (this.windMode && this.lastPos) {
+      const dx = pos.x - this.lastPos.x;
+      const dy = pos.y - this.lastPos.y;
+      if (dx !== 0 || dy !== 0) {
+        this.pendingWindCommands.push({
+          x: pos.x, y: pos.y,
+          dx, dy,
+          radius: this.brushRadius * 2,
+        });
+      }
+    } else if (this.lastPos) {
       this.bresenham(this.lastPos.x, this.lastPos.y, pos.x, pos.y);
     } else {
       this.addCommand(pos.x, pos.y);

@@ -129,6 +129,12 @@ async function init(): Promise<void> {
       worker.postMessage({ type: 'input', commands } as ToWorkerMessage);
     }
 
+    // Flush wind commands to worker
+    const windCommands = input.flushWind();
+    if (windCommands.length > 0) {
+      worker.postMessage({ type: 'wind', commands: windCommands } as ToWorkerMessage);
+    }
+
     // Request simulation tick (skip every other frame if throttled)
     if (!skipSimulation || loopCount % 2 === 0) {
       worker.postMessage({ type: 'tick' } as ToWorkerMessage);

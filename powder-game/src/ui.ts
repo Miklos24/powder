@@ -19,6 +19,7 @@ export class UI {
   private onLoadScene: (scene: Scene) => void;
   private paused = false;
   private eraserActive = false;
+  private windActive = false;
 
   constructor(
     container: HTMLElement,
@@ -56,8 +57,9 @@ export class UI {
     for (const id of PLACEABLE) {
       picker.appendChild(this.createElementButton(id));
     }
-    // Eraser button
+    // Tool buttons
     picker.appendChild(this.createEraserButton());
+    picker.appendChild(this.createWindButton());
     this.container.appendChild(picker);
 
     // Controls -- top-right
@@ -89,6 +91,7 @@ export class UI {
       elemRow.appendChild(this.createElementButton(id, 28));
     }
     elemRow.appendChild(this.createEraserButton(28));
+    elemRow.appendChild(this.createWindButton(28));
     toolbar.appendChild(elemRow);
 
     // Controls row
@@ -116,7 +119,9 @@ export class UI {
     btn.title = elem.name;
     btn.addEventListener('click', () => {
       this.eraserActive = false;
+      this.windActive = false;
       this.input.eraserMode = false;
+      this.input.windMode = false;
       this.input.selectedElement = id;
       this.refreshSelection();
     });
@@ -132,7 +137,25 @@ export class UI {
     btn.title = 'Eraser';
     btn.addEventListener('click', () => {
       this.eraserActive = !this.eraserActive;
+      this.windActive = false;
       this.input.eraserMode = this.eraserActive;
+      this.input.windMode = false;
+      this.refreshSelection();
+    });
+    return btn;
+  }
+
+  private createWindButton(size = 32): HTMLElement {
+    const btn = document.createElement('div');
+    btn.className = 'pg-wind-btn';
+    btn.style.cssText = `width:${size}px;height:${size}px;border-radius:6px;cursor:pointer;flex-shrink:0;border:2px solid ${this.windActive ? '#fff' : 'transparent'};background:#2a2a34;display:flex;align-items:center;justify-content:center;color:#888;font-size:${size > 28 ? 14 : 11}px;`;
+    btn.textContent = 'W';
+    btn.title = 'Wind tool';
+    btn.addEventListener('click', () => {
+      this.windActive = !this.windActive;
+      this.eraserActive = false;
+      this.input.windMode = this.windActive;
+      this.input.eraserMode = false;
       this.refreshSelection();
     });
     return btn;
@@ -225,12 +248,17 @@ export class UI {
     const buttons = this.container.querySelectorAll<HTMLElement>('[data-elem-id]');
     buttons.forEach((btn) => {
       const id = Number(btn.dataset.elemId) as ElementId;
-      btn.style.borderColor = (id === this.input.selectedElement && !this.eraserActive) ? '#fff' : 'transparent';
+      btn.style.borderColor = (id === this.input.selectedElement && !this.eraserActive && !this.windActive) ? '#fff' : 'transparent';
     });
     // Update eraser
     const eraserBtns = this.container.querySelectorAll<HTMLElement>('.pg-eraser-btn');
     eraserBtns.forEach((btn) => {
       btn.style.borderColor = this.eraserActive ? '#fff' : 'transparent';
+    });
+    // Update wind
+    const windBtns = this.container.querySelectorAll<HTMLElement>('.pg-wind-btn');
+    windBtns.forEach((btn) => {
+      btn.style.borderColor = this.windActive ? '#fff' : 'transparent';
     });
   }
 
@@ -285,7 +313,17 @@ export class UI {
       }
       if (e.key.toLowerCase() === 'e') {
         this.eraserActive = !this.eraserActive;
+        this.windActive = false;
         this.input.eraserMode = this.eraserActive;
+        this.input.windMode = false;
+        this.refreshSelection();
+        return;
+      }
+      if (e.key.toLowerCase() === 'w') {
+        this.windActive = !this.windActive;
+        this.eraserActive = false;
+        this.input.windMode = this.windActive;
+        this.input.eraserMode = false;
         this.refreshSelection();
         return;
       }
