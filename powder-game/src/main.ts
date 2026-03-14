@@ -1,6 +1,7 @@
 import { Renderer } from './renderer';
 import { InputHandler } from './input';
 import { UI } from './ui';
+import { Audio } from './audio';
 import { selectTier, calculateCanvasSize } from './adaptive';
 import type { FromWorkerMessage, ToWorkerMessage } from './types';
 
@@ -30,6 +31,12 @@ async function init(): Promise<void> {
   const cursor = document.createElement('div');
   cursor.style.cssText = 'position:fixed;pointer-events:none;border:1.5px solid rgba(255,255,255,0.3);border-radius:50%;z-index:5;display:none;';
   document.body.appendChild(cursor);
+
+  // Init audio engine
+  const audio = new Audio();
+  // Resume AudioContext on first user interaction
+  const resumeAudio = () => { audio.resume(); };
+  canvas.addEventListener('pointerdown', resumeAudio, { once: true });
 
   // Start simulation worker
   const worker = new Worker(
@@ -71,6 +78,9 @@ async function init(): Promise<void> {
     // Render
     const now = performance.now();
     renderer.draw(elements, metadata, now / 1000);
+
+    // Update audio based on active elements
+    audio.update(elements);
 
     // Performance guardrail: track frame time
     const frameTime = now - lastFrameTime;
