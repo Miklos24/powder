@@ -26,6 +26,11 @@ async function init(): Promise<void> {
   // Init input handler
   const input = new InputHandler(canvas, gridWidth, gridHeight);
 
+  // Brush cursor preview overlay
+  const cursor = document.createElement('div');
+  cursor.style.cssText = 'position:fixed;pointer-events:none;border:1.5px solid rgba(255,255,255,0.3);border-radius:50%;z-index:5;display:none;';
+  document.body.appendChild(cursor);
+
   // Start simulation worker
   const worker = new Worker(
     new URL('./simulation/worker.ts', import.meta.url),
@@ -107,6 +112,21 @@ async function init(): Promise<void> {
       worker.postMessage({ type: 'tick' } as ToWorkerMessage);
     }
     loopCount++;
+
+    // Update brush cursor preview
+    const pos = input.cursorClientPos;
+    if (pos) {
+      const rect = canvas.getBoundingClientRect();
+      const cellSize = rect.width / gridWidth;
+      const diameter = input.brushRadius * 2 * cellSize;
+      cursor.style.display = 'block';
+      cursor.style.width = `${diameter}px`;
+      cursor.style.height = `${diameter}px`;
+      cursor.style.left = `${pos.x - diameter / 2}px`;
+      cursor.style.top = `${pos.y - diameter / 2}px`;
+    } else {
+      cursor.style.display = 'none';
+    }
 
     requestAnimationFrame(loop);
   }

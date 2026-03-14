@@ -14,16 +14,28 @@ export class InputHandler {
   brushRadius: number = 2;
   eraserMode: boolean = false;
 
+  /** Current cursor position in client coordinates, null when off-canvas */
+  cursorClientPos: { x: number; y: number } | null = null;
+
   constructor(canvas: HTMLCanvasElement, gridWidth: number, gridHeight: number) {
     this.canvas = canvas;
     this.gridWidth = gridWidth;
     this.gridHeight = gridHeight;
 
     // Mouse events
-    canvas.addEventListener('mousedown', (e) => this.onPointerDown(e.clientX, e.clientY, e.button === 2));
-    canvas.addEventListener('mousemove', (e) => this.onPointerMove(e.clientX, e.clientY));
+    canvas.addEventListener('mousedown', (e) => {
+      this.cursorClientPos = { x: e.clientX, y: e.clientY };
+      this.onPointerDown(e.clientX, e.clientY, e.button === 2);
+    });
+    canvas.addEventListener('mousemove', (e) => {
+      this.cursorClientPos = { x: e.clientX, y: e.clientY };
+      this.onPointerMove(e.clientX, e.clientY);
+    });
     canvas.addEventListener('mouseup', () => this.onPointerUp());
-    canvas.addEventListener('mouseleave', () => this.onPointerUp());
+    canvas.addEventListener('mouseleave', () => {
+      this.cursorClientPos = null;
+      this.onPointerUp();
+    });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
